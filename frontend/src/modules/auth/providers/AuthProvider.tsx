@@ -27,7 +27,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           });
         } catch {
           // Token invalido o expirado, limpiar y mostrar login
-          // console.log('[Auth] token invalido, redirigiendo a login');
+          console.log('[Auth] DEBUG: token invalido, redirigiendo a login');
           localStorage.removeItem('auth_token');
           setState({
             user: null,
@@ -63,8 +63,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   };
 
-  const logout = async () => {
-    await logoutUser();
+  const logout = () => {
+    logoutUser();
     localStorage.removeItem('auth_token');
     setState({
       user: null,
