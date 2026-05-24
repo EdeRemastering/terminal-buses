@@ -13,5 +13,8 @@ export const useCreateBus = () => {
         old ? [...old, newBus] : [newBus]
       );
     },
+    onError: (err) => {
+      console.warn('[useCreateBus] fallo al crear bus:', err.message);
+    },
   });
 };
