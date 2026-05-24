@@ -1,0 +1,42 @@
+import { Search } from 'lucide-react';
+import { Input } from '@/common/components/ui/input';
+import { Card } from '@/common/components/ui/card';
+import { cn } from '@/common/utils';
+
+interface RoutesFiltersProps {
+  searchTerm: string;
+  onSearchChange: (value: string) => void;
+  statusFilter: string;
+  onStatusFilterChange: (value: string) => void;
+}
+
+export const RoutesFilters = ({ searchTerm, onSearchChange, statusFilter, onStatusFilterChange }: RoutesFiltersProps) => (
+  <Card className="p-4 border-none shadow-sm flex flex-col md:flex-row gap-4 items-center justify-between bg-card/50 backdrop-blur-sm">
+    <div className="relative w-full md:w-96">
+      <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+      <Input
+        value={searchTerm}
+        onChange={(e) => onSearchChange(e.target.value)}
+        placeholder="Buscar por origen, destino o nombre..."
+        className="pl-10 h-11 bg-background border-none focus-visible:ring-1 focus-visible:ring-primary/20 rounded-xl"
+      />
+    </div>
+    <div className="flex items-center gap-2 bg-background p-1 rounded-xl shadow-inner border border-muted/20 w-full md:w-auto">
+      {['ALL', 'ACTIVE', 'INACTIVE'].map((status) => (
+        <button
+          key={status}
+          onClick={() => onStatusFilterChange(status)}
+          className={cn(
+            "px-4 py-1.5 rounded-lg text-xs font-semibold transition-all flex-1 md:flex-none text-center",
+            statusFilter === status
+              ? "bg-primary text-primary-foreground shadow-sm"
+              : "hover:bg-muted/50 text-muted-foreground hover:text-foreground"
+          )}
+        >
+          {status === 'ALL' ? 'Todos' :
+           status === 'ACTIVE' ? 'Activas' : 'Inactivas'}
+        </button>
+      ))}
+    </div>
+  </Card>
+);
