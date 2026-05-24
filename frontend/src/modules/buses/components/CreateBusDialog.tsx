@@ -29,6 +29,7 @@ import { cn } from '@/common/utils';
 import { createBusSchema, type CreateBusInput } from '@/modules/buses/schemas/busSchema';
 import { useCreateBus } from '@/modules/buses/hooks/useCreateBus';
 
+// DUPLICADO: mismo array en busConfig.ts, unificar
 const BUS_TYPES = [
   { value: 'LUXURY', label: 'Servicio de Lujo' },
   { value: 'EXPRESS', label: 'Servicio Exprés' },
@@ -88,6 +89,7 @@ export const CreateBusDialog = ({ open, onOpenChange }: CreateBusDialogProps) =>
     mutate(result.data, {
       onSuccess: () => {
         setSuccess(true);
+        // FIXME: fragil, mejor usar estado de animacion con onAnimationComplete
         setTimeout(() => {
           setSuccess(false);
           onOpenChange(false);

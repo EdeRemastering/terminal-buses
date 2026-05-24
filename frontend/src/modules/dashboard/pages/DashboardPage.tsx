@@ -8,7 +8,7 @@ import { QuickActionsSection } from '@/modules/dashboard/components/QuickActions
 export const DashboardPage = () => {
   const { data: stats, isLoading, isError } = useDashboardStats();
 
-  // Esqueleto de carga mientras se obtienen las estadisticas
+  // TODO: reemplazar esqueleto generico con Skeleton dedicado con shimmer
   if (isLoading) {
     return (
       <div className="container mx-auto p-6 space-y-8 pb-12">
@@ -31,7 +31,8 @@ export const DashboardPage = () => {
       <div className="container mx-auto p-6">
         <div className="p-6 rounded-xl bg-red-50 border border-red-200 text-red-700">
           <p className="font-bold">Error al cargar datos del dashboard</p>
-          {/* TODO: implementar reintento automatico con exponential backoff */}
+          {/* FIXME: implementar reintento automatico con exponential backoff */}
+          {/* v2: agregar boton de reintentar manual */}
           <p className="text-sm">Verifica la conexión con el servidor.</p>
         </div>
       </div>

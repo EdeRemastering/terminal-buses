@@ -20,6 +20,7 @@ export const TripsPage = () => {
   const [managingTrip, setManagingTrip] = useState<Trip | null>(null);
   const [passengersTrip, setPassengersTrip] = useState<Trip | null>(null);
   const [cancellingTrip, setCancellingTrip] = useState<Trip | null>(null);
+  // TODO: considerar useReducer en lugar de 5 useState para los dialogos
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState<TripStatus | 'ALL'>('ALL');
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'WEEK'>('ALL');
@@ -103,6 +104,7 @@ export const TripsPage = () => {
       </main>
       <CreateTripDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <EditTripDialog open={!!editingTrip} onOpenChange={(open) => { if (!open) setEditingTrip(null); }} trip={editingTrip} />
+      {/* HACK: retraso para que el dialogo anterior se cierre antes de abrir el siguiente */}
       <TripManageDialog
         open={!!managingTrip}
         onOpenChange={(open) => { if (!open) setManagingTrip(null); }}
