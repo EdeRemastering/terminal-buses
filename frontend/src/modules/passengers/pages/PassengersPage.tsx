@@ -52,11 +52,6 @@ export const PassengersPage = () => {
     );
   };
 
-  const handleResetFilters = () => {
-    setSearchTerm('');
-    setStatusFilter('ALL');
-  };
-
   if (isError) {
     return <PassengersErrorState message={(error as Error).message} onRetry={() => window.location.reload()} />;
   }
@@ -76,9 +71,12 @@ export const PassengersPage = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {isLoading ? (
-          Array.from({ length: 4 }).map((_, i) => (
-            <PassengerCardSkeleton key={i} />
-          ))
+          <>
+            <PassengerCardSkeleton />
+            <PassengerCardSkeleton />
+            <PassengerCardSkeleton />
+            <PassengerCardSkeleton />
+          </>
         ) : (
           <AnimatePresence mode="popLayout">
             {filteredPassengers.map((p, index) => (
@@ -103,7 +101,7 @@ export const PassengersPage = () => {
       </div>
 
       {!isLoading && filteredPassengers.length === 0 && (
-        <PassengersEmptyState onResetFilters={handleResetFilters} />
+        <PassengersEmptyState onResetFilters={() => { setSearchTerm(''); setStatusFilter('ALL'); }} />
       )}
 
       <CreatePassengerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
