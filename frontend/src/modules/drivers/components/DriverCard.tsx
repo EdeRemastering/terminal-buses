@@ -7,10 +7,8 @@ import {
   Briefcase,
   Award,
   MoreVertical,
+  Pencil,
   Trash2,
-  CheckCircle2,
-  Bus as BusIcon,
-  UserX,
 } from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
 import { Badge } from '@/common/components/ui/badge';
@@ -21,8 +19,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu';
+import { PermissionGate } from '@/common/components/PermissionGate';
 import { cn } from '@/common/utils';
-import { availabilityConfig } from './driverConfig';
+import { availabilityConfig, driverAvailabilityOptions } from './driverConfig';
 import type { Driver } from '@/modules/drivers/types';
 
 interface DriverCardProps {
@@ -30,9 +29,10 @@ interface DriverCardProps {
   index?: number;
   onToggleAvailability: (id: string, availability: Driver['availability']) => void;
   onDelete: (id: string) => void;
+  onEdit?: (driver: Driver) => void;
 }
 
-export const DriverCard = ({ driver, index = 0, onToggleAvailability, onDelete }: DriverCardProps) => {
+export const DriverCard = ({ driver, index = 0, onToggleAvailability, onDelete, onEdit }: DriverCardProps) => {
   const availability = availabilityConfig[driver.availability];
   const StatusIcon = availability.icon;
 
@@ -72,30 +72,35 @@ export const DriverCard = ({ driver, index = 0, onToggleAvailability, onDelete }
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl p-2">
-                <DropdownMenuItem
-                  onClick={() => onToggleAvailability(driver.id, 'AVAILABLE')}
-                  className="rounded-lg text-emerald-600 dark:text-emerald-400 gap-2 font-medium"
-                >
-                  <CheckCircle2 className="w-4 h-4" /> Marcar Disponible
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onToggleAvailability(driver.id, 'ON_TRIP')}
-                  className="rounded-lg text-blue-600 dark:text-blue-400 gap-2 font-medium"
-                >
-                  <BusIcon className="w-4 h-4" /> Asignar a Ruta
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onToggleAvailability(driver.id, 'OFF_DUTY')}
-                  className="rounded-lg text-slate-600 dark:text-slate-400 gap-2 font-medium"
-                >
-                  <UserX className="w-4 h-4" /> Poner en Descanso
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(driver.id)}
-                  className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
-                >
-                  <Trash2 className="w-4 h-4" /> Eliminar Conductor
-                </DropdownMenuItem>
+                <PermissionGate permission="driver:edit">
+                  <DropdownMenuItem
+                    onClick={() => onEdit?.(driver)}
+                    className="rounded-lg gap-2 font-medium"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar Conductor
+                  </DropdownMenuItem>
+                </PermissionGate>
+                <PermissionGate permission="driver:edit">
+                  {driverAvailabilityOptions
+                    .filter(opt => opt.value !== driver.availability)
+                    .map(opt => (
+                      <DropdownMenuItem
+                        key={opt.value}
+                        onClick={() => onToggleAvailability(driver.id, opt.value)}
+                        className={`rounded-lg ${opt.className} gap-2 font-medium`}
+                      >
+                        <opt.icon className="w-4 h-4" /> {opt.label}
+                      </DropdownMenuItem>
+                    ))}
+                </PermissionGate>
+                <PermissionGate permission="driver:delete">
+                  <DropdownMenuItem
+                    onClick={() => onDelete(driver.id)}
+                    className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar Conductor
+                  </DropdownMenuItem>
+                </PermissionGate>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

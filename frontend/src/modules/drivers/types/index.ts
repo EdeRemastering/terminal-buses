@@ -1,5 +1,6 @@
 export interface Driver {
   id: string;
+  code: string;
   name: string;
   licenseNumber: string;
   licenseType: string;

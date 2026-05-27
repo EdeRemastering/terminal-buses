@@ -1,8 +1,12 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { useDrivers } from '@/modules/drivers/hooks/useDrivers';
+import { useDeleteDriver } from '@/modules/drivers/hooks/useDeleteDriver';
+import { useUpdateDriverAvailability } from '@/modules/drivers/hooks/useUpdateDriverAvailability';
 import { CreateDriverDialog } from '@/modules/drivers/components/CreateDriverDialog';
+import { EditDriverDialog } from '@/modules/drivers/components/EditDriverDialog';
 import { DriversPageHeader } from '@/modules/drivers/components/DriversPageHeader';
 import { DriversStatsCards } from '@/modules/drivers/components/DriversStatsCards';
 import { DriversFilters } from '@/modules/drivers/components/DriversFilters';
@@ -18,6 +22,9 @@ export const DriversPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingDriver, setEditingDriver] = useState<Driver | null>(null);
+  const { mutate: deleteDriver } = useDeleteDriver();
+  const { mutate: updateDriverAvailability } = useUpdateDriverAvailability();
 
   const stats = !drivers ? { total: 0, available: 0, onTrip: 0, offDuty: 0 } : {
     total: drivers.length,
@@ -39,19 +46,21 @@ export const DriversPage = () => {
   }, [drivers, searchTerm, statusFilter]);
 
   const handleToggleAvailability = (id: string, newAvailability: Driver['availability']) => {
-    queryClient.setQueryData<Driver[]>(['drivers'], (old) =>
-      old ? old.map(d => d.id === id ? { ...d, availability: newAvailability } : d) : old
-    );
+    updateDriverAvailability({ id, availability: newAvailability });
   };
 
   const handleDelete = (id: string) => {
-    queryClient.setQueryData<Driver[]>(['drivers'], (old) =>
-      old ? old.filter(d => d.id !== id) : old
-    );
+    deleteDriver(id, {
+      onSuccess: () => toast.success('Conductor eliminado'),
+      onError: () => {
+        toast.error('Error al eliminar el conductor');
+        queryClient.invalidateQueries({ queryKey: ['drivers'] });
+      },
+    });
   };
 
   if (isError) {
-    return <DriversErrorState message={(error as Error).message} onRetry={() => window.location.reload()} />;
+    return <DriversErrorState message={(error as Error).message} onRetry={() => queryClient.refetchQueries({ queryKey: ['drivers'] })} />;
   }
 
   return (
@@ -84,6 +93,7 @@ export const DriversPage = () => {
                   index={index}
                   onToggleAvailability={handleToggleAvailability}
                   onDelete={handleDelete}
+                  onEdit={setEditingDriver}
                 />
               ))}
             </AnimatePresence>
@@ -96,6 +106,11 @@ export const DriversPage = () => {
               </main>
 
       <CreateDriverDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <EditDriverDialog
+        open={!!editingDriver}
+        onOpenChange={(open) => { if (!open) setEditingDriver(null); }}
+        driver={editingDriver}
+      />
     </>
   );
 };

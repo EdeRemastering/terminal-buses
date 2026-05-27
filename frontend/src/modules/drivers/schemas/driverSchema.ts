@@ -10,7 +10,8 @@ export const createDriverSchema = z.object({
     .email('Correo electrónico inválido'),
   phone: z
     .string()
-    .regex(/^\+?\d{7,15}$/, 'Teléfono inválido. Ejemplo: +57 300 123 4567'),
+    .transform(val => val.trim().replace(/\s+/g, ''))
+    .pipe(z.string().regex(/^\+?\d{7,10}$/, 'El teléfono debe tener entre 7 y 10 dígitos')),
   licenseNumber: z
     .string()
     .min(5, 'Número de licencia demasiado corto')
