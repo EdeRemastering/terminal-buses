@@ -60,7 +60,7 @@ export const QuickActionsSection = ({ stats }: QuickActionsSectionProps) => {
             const minutesUntil = Math.round((departureTime.getTime() - Date.now()) / 60000);
 
             return (
-              <div key={trip.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors">
+              <div key={trip.id} className="flex items-center justify-between p-3 rounded-xl hover:bg-muted/50 transition-colors cursor-pointer" onClick={() => navigate('/trips')}>
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-xl bg-orange-100 text-orange-600 flex items-center justify-center font-bold text-xs">
                     {minutesUntil > 0 ? minutesUntil : '0'}

@@ -50,7 +50,7 @@ export const ActiveTripsFeed = ({ trips, operationalNotice }: ActiveTripsFeedPro
             const departureTime = new Date(trip.departure_time).toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
 
             return (
-              <div key={trip.id} className="group cursor-pointer">
+              <div key={trip.id} className="group cursor-pointer" onClick={() => navigate('/trips')}>
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-3">
                     <div className={cn("w-2 h-2 rounded-full", config.dot)} />

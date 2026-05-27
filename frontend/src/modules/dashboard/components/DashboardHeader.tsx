@@ -1,5 +1,6 @@
 import { Clock, Download } from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
+import { PermissionGate } from '@/common/components/PermissionGate';
 import type { DashboardStats } from '@/modules/dashboard/types';
 
 interface DashboardHeaderProps {
@@ -37,14 +38,16 @@ export const DashboardHeader = ({ stats }: DashboardHeaderProps) => {
         <p className="text-muted-foreground mt-1">Monitoreo en tiempo real de la terminal</p>
       </div>
       <div className="flex items-center gap-3">
-        <Button variant="outline" className="rounded-xl border-dashed">
+        <Button variant="outline" className="rounded-xl border-dashed cursor-default" tabIndex={-1}>
           <Clock className="w-4 h-4 mr-2" />
           {now.toLocaleDateString('es-CO', { day: 'numeric', month: 'short', year: 'numeric' })}
         </Button>
-        <Button className="rounded-xl shadow-lg shadow-primary/20" onClick={handleDownloadReport}>
-          <Download className="w-4 h-4 mr-2" />
-          Descargar Reporte
-        </Button>
+        <PermissionGate permission="report:download">
+          <Button className="rounded-xl shadow-lg shadow-primary/20" onClick={handleDownloadReport}>
+            <Download className="w-4 h-4 mr-2" />
+            Descargar Reporte
+          </Button>
+        </PermissionGate>
       </div>
     </div>
   );
