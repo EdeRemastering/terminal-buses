@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Helpers\JsonBodyTrait;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Services\PassengerService;
@@ -9,13 +10,15 @@ use RuntimeException;
 
 class PassengerController
 {
+    use JsonBodyTrait;
+
     public function __construct(
         private PassengerService $passengerService = new PassengerService(),
     ) {}
 
     public function index(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(1000, max(1, (int) ($_GET['perPage'] ?? 100)));
         Response::success($this->passengerService->getAll($page, $perPage));
@@ -23,7 +26,7 @@ class PassengerController
 
     public function show(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         try {
             Response::success($this->passengerService->getById($id));
         } catch (RuntimeException $e) {
@@ -33,7 +36,7 @@ class PassengerController
 
     public function store(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->getJsonBody();
 
         $checks = [
@@ -59,7 +62,7 @@ class PassengerController
 
     public function update(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->getJsonBody();
 
         try {
@@ -69,9 +72,25 @@ class PassengerController
         }
     }
 
+    public function updateStatus(string $id): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        $input = $this->getJsonBody();
+
+        if (empty($input['status'])) {
+            Response::error('El estado es requerido');
+        }
+
+        try {
+            Response::success($this->passengerService->update($id, ['status' => $input['status']]), 'Estado del pasajero actualizado');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
+
     public function destroy(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN');
         try {
             $this->passengerService->delete($id);
             Response::success(null, 'Pasajero eliminado');
@@ -80,12 +99,4 @@ class PassengerController
         }
     }
 
-    private function getJsonBody(): array
-    {
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            Response::error('Cuerpo JSON inválido o vacío');
-        }
-        return $input;
-    }
 }

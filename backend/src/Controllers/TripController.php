@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Helpers\JsonBodyTrait;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Services\TripService;
@@ -9,13 +10,15 @@ use RuntimeException;
 
 class TripController
 {
+    use JsonBodyTrait;
+
     public function __construct(
         private TripService $tripService = new TripService(),
     ) {}
 
     public function index(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(1000, max(1, (int) ($_GET['perPage'] ?? 100)));
         Response::success($this->tripService->getAll($page, $perPage));
@@ -23,7 +26,7 @@ class TripController
 
     public function show(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         try {
             Response::success($this->tripService->getById($id));
         } catch (RuntimeException $e) {
@@ -33,7 +36,7 @@ class TripController
 
     public function store(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->getJsonBody();
 
         // Acepta tanto routeId/routeCode como busId/busCode para flexibilidad
@@ -56,7 +59,7 @@ class TripController
 
     public function update(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->getJsonBody();
 
         try {
@@ -68,7 +71,7 @@ class TripController
 
     public function updateStatus(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->getJsonBody();
 
         if (empty($input['status'])) {
@@ -84,7 +87,7 @@ class TripController
 
     public function destroy(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN');
         try {
             $this->tripService->delete($id);
             Response::success(null, 'Viaje eliminado');
@@ -93,12 +96,50 @@ class TripController
         }
     }
 
-    private function getJsonBody(): array
+    public function addPassenger(string $id): void
     {
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            Response::error('Cuerpo JSON inválido o vacío');
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        $input = $this->getJsonBody();
+        try {
+            $passengers = $this->tripService->addPassenger($id, $input);
+            Response::created($passengers, 'Pasajero agregado al viaje');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
         }
-        return $input;
     }
+
+    public function removePassenger(string $id, string $pid): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        try {
+            $this->tripService->removePassenger($id, $pid);
+            Response::success(null, 'Pasajero eliminado del viaje');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
+
+    public function assignSeat(string $id, string $pid): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        $input = $this->getJsonBody();
+        try {
+            $result = $this->tripService->assignSeat($id, $pid, $input);
+            Response::success($result, 'Asiento asignado');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
+
+    public function clearSeat(string $id, string $pid): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        try {
+            $result = $this->tripService->clearSeat($id, $pid);
+            Response::success($result, 'Asiento liberado');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
+
 }

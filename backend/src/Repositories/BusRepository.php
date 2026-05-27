@@ -36,6 +36,14 @@ class BusRepository
         return $result ?: null;
     }
 
+    public function findByPlate(string $plate): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM buses WHERE plate = :plate');
+        $stmt->execute(['plate' => $plate]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
     public function create(array $data): string
     {
         $stmt = $this->db->prepare(

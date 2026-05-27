@@ -36,6 +36,14 @@ class PassengerRepository
         return $result ?: null;
     }
 
+    public function findByDocumentId(string $documentId): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM passengers WHERE document_id = :document_id');
+        $stmt->execute(['document_id' => $documentId]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
     public function create(array $data): string
     {
         $stmt = $this->db->prepare(

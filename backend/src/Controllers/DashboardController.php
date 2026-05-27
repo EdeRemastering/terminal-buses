@@ -17,7 +17,7 @@ class DashboardController
 
     public function stats(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $stats = $this->dashboardService->getStats();
         Response::success($stats);
     }

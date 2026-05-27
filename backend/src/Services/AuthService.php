@@ -43,6 +43,37 @@ class AuthService
         ];
     }
 
+    public function register(array $data): array
+    {
+        if ($this->userRepo->findByEmail($data['email'])) {
+            throw new RuntimeException('El correo ya está registrado');
+        }
+
+        if (empty($data['password']) || strlen($data['password']) < 8) {
+            throw new RuntimeException('La contraseña debe tener al menos 8 caracteres');
+        }
+
+        $role = $data['role'] ?? 'SECRETARY';
+        if (!in_array($role, ['ADMIN', 'SECRETARY'], true)) {
+            throw new RuntimeException('Rol inválido. Use ADMIN o SECRETARY');
+        }
+
+        $passwordHash = password_hash($data['password'], PASSWORD_BCRYPT);
+        if ($passwordHash === false || $passwordHash === null) {
+            throw new RuntimeException('Error al procesar la contraseña');
+        }
+
+        $id = $this->userRepo->create([
+            'email'         => $data['email'],
+            'name'          => $data['name'],
+            'password_hash' => $passwordHash,
+            'phone'         => $data['phone'] ?? null,
+            'role'          => $role,
+        ]);
+
+        return $this->getCurrentUser($id);
+    }
+
     public function getCurrentUser(string $userId): array
     {
         $user = $this->userRepo->findById($userId);

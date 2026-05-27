@@ -3,12 +3,14 @@
 namespace App\Services;
 
 use App\Repositories\PassengerRepository;
+use App\Repositories\TripPassengerRepository;
 use RuntimeException;
 
 class PassengerService
 {
     public function __construct(
         private PassengerRepository $passengerRepo = new PassengerRepository(),
+        private TripPassengerRepository $tripPassengerRepo = new TripPassengerRepository(),
     ) {}
 
     public function getAll(int $page = 1, int $perPage = 100): array
@@ -42,6 +44,10 @@ class PassengerService
             throw new RuntimeException('El correo ya está en uso');
         }
 
+        if ($this->passengerRepo->findByDocumentId($data['documentId'])) {
+            throw new RuntimeException('El documento de identidad "' . $data['documentId'] . '" ya está registrado');
+        }
+
         $id = $this->passengerRepo->create([
             'code'        => $this->passengerRepo->nextCode(),
             'name'        => $data['name'],
@@ -66,6 +72,13 @@ class PassengerService
             unset($mapped['frequentTravelerPoints']);
         }
 
+        if (array_key_exists('frequent_traveler_points', $mapped)) {
+            $points = (int) $mapped['frequent_traveler_points'];
+            if ($points < 0) {
+                throw new RuntimeException('Los puntos de viajero frecuente no pueden ser negativos');
+            }
+        }
+
         $this->passengerRepo->update($id, $mapped);
         return $this->getById($id);
     }
@@ -74,6 +87,13 @@ class PassengerService
     {
         $passenger = $this->passengerRepo->findById($id);
         if (!$passenger) throw new RuntimeException('Pasajero no encontrado');
+
+        $trips = $this->tripPassengerRepo->findByPassengerId($id);
+        if (!empty($trips)) {
+            throw new RuntimeException(
+                'No se puede eliminar el pasajero porque tiene historial de ' . count($trips) . ' viaje(s)'
+            );
+        }
 
         $this->passengerRepo->delete($id);
     }

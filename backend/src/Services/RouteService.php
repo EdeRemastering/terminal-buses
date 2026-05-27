@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Repositories\RouteRepository;
 use App\Repositories\RouteStopRepository;
+use App\Repositories\TripRepository;
 use RuntimeException;
 
 class RouteService
@@ -11,6 +12,7 @@ class RouteService
     public function __construct(
         private RouteRepository $routeRepo = new RouteRepository(),
         private RouteStopRepository $stopRepo = new RouteStopRepository(),
+        private TripRepository $tripRepo = new TripRepository(),
     ) {}
 
     public function getAll(int $page = 1, int $perPage = 100): array
@@ -33,6 +35,24 @@ class RouteService
             throw new RuntimeException('Nombre, origen y destino son requeridos');
         }
 
+        if (strtolower(trim($data['origin'])) === strtolower(trim($data['destination']))) {
+            throw new RuntimeException('El origen y el destino deben ser diferentes');
+        }
+
+        if ($this->routeRepo->findByName($data['name'])) {
+            throw new RuntimeException('El nombre de ruta "' . $data['name'] . '" ya está registrado');
+        }
+
+        if (!isset($data['distanceKm']) || !is_numeric($data['distanceKm']) || (float)$data['distanceKm'] <= 0) {
+            throw new RuntimeException('La distancia debe ser un número mayor a 0');
+        }
+        if (!isset($data['durationHours']) || !is_numeric($data['durationHours']) || (float)$data['durationHours'] <= 0) {
+            throw new RuntimeException('La duración debe ser un número mayor a 0');
+        }
+        if (!isset($data['basePrice']) || !is_numeric($data['basePrice']) || (float)$data['basePrice'] <= 0) {
+            throw new RuntimeException('El precio base debe ser un número mayor a 0');
+        }
+
         $stops = $data['stops'];
         if (is_string($stops)) {
             $stops = array_map('trim', explode(',', $stops));
@@ -45,9 +65,9 @@ class RouteService
             'name'           => $data['name'],
             'origin'         => $data['origin'],
             'destination'    => $data['destination'],
-            'distance_km'    => $data['distanceKm'] ?? 0,
-            'duration_hours' => $data['durationHours'] ?? 0,
-            'base_price'     => $data['basePrice'] ?? 0,
+            'distance_km'    => (float)$data['distanceKm'],
+            'duration_hours' => (float)$data['durationHours'],
+            'base_price'     => (float)$data['basePrice'],
         ]);
 
         $estimatedMinutes = isset($data['estimatedMinutes'])
@@ -73,6 +93,19 @@ class RouteService
         $route = $this->routeRepo->findById($id);
         if (!$route) throw new RuntimeException('Ruta no encontrada');
 
+        if (array_key_exists('name', $data)) {
+            $existing = $this->routeRepo->findByName($data['name']);
+            if ($existing && $existing['id'] !== $id) {
+                throw new RuntimeException('El nombre de ruta "' . $data['name'] . '" ya está registrado por otra ruta');
+            }
+        }
+
+        $origin = $data['origin'] ?? $route['origin'];
+        $destination = $data['destination'] ?? $route['destination'];
+        if (strtolower(trim($origin)) === strtolower(trim($destination))) {
+            throw new RuntimeException('El origen y el destino deben ser diferentes');
+        }
+
         $this->routeRepo->update($id, $data);
         return $this->getById($id);
     }
@@ -81,6 +114,11 @@ class RouteService
     {
         $route = $this->routeRepo->findById($id);
         if (!$route) throw new RuntimeException('Ruta no encontrada');
+
+        $activeTrips = $this->tripRepo->countActiveByRouteId($id);
+        if ($activeTrips > 0) {
+            throw new RuntimeException('No se puede eliminar la ruta porque tiene ' . $activeTrips . ' viaje(s) activo(s)');
+        }
 
         $this->routeRepo->delete($id);
     }

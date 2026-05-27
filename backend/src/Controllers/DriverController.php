@@ -2,20 +2,37 @@
 
 namespace App\Controllers;
 
+use App\Helpers\JsonBodyTrait;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Services\DriverService;
+use App\Services\TripService;
 use RuntimeException;
 
 class DriverController
 {
+    use JsonBodyTrait;
+
     public function __construct(
         private DriverService $driverService = new DriverService(),
+        private TripService $tripService = new TripService(),
     ) {}
+
+    public function myInfo(): void
+    {
+        $payload = AuthMiddleware::requireRole('DRIVER');
+
+        try {
+            $info = $this->driverService->getMyInfo($payload->sub);
+            Response::success($info);
+        } catch (RuntimeException $e) {
+            Response::notFound($e->getMessage());
+        }
+    }
 
     public function index(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(1000, max(1, (int) ($_GET['perPage'] ?? 100)));
         Response::success($this->driverService->getAll($page, $perPage));
@@ -23,7 +40,7 @@ class DriverController
 
     public function show(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         try {
             Response::success($this->driverService->getById($id));
         } catch (RuntimeException $e) {
@@ -33,7 +50,7 @@ class DriverController
 
     public function store(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->parseJsonBody();
 
         if (empty($input['name'])) Response::error('El nombre es requerido');
@@ -52,7 +69,7 @@ class DriverController
 
     public function update(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->parseJsonBody();
 
         try {
@@ -62,9 +79,25 @@ class DriverController
         }
     }
 
+    public function updateAvailability(string $id): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        $input = $this->parseJsonBody();
+
+        if (empty($input['availability'])) {
+            Response::error('La disponibilidad es requerida');
+        }
+
+        try {
+            Response::success($this->driverService->update($id, ['availability' => $input['availability']]), 'Disponibilidad del conductor actualizada');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
+
     public function destroy(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN');
         try {
             $this->driverService->delete($id);
             Response::success(null, 'Conductor eliminado');
@@ -73,12 +106,4 @@ class DriverController
         }
     }
 
-    private function parseJsonBody(): array
-    {
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            Response::error('Cuerpo JSON inválido o vacío');
-        }
-        return $input;
-    }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Helpers\JsonBodyTrait;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Services\BusService;
@@ -9,13 +10,15 @@ use RuntimeException;
 
 class BusController
 {
+    use JsonBodyTrait;
+
     public function __construct(
         private BusService $busService = new BusService(),
     ) {}
 
     public function index(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(1000, max(1, (int) ($_GET['perPage'] ?? 100)));
         Response::success($this->busService->getAll($page, $perPage));
@@ -23,7 +26,7 @@ class BusController
 
     public function show(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         try {
             Response::success($this->busService->getById($id));
         } catch (RuntimeException $e) {
@@ -33,7 +36,7 @@ class BusController
 
     public function store(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->parseJsonBody();
 
         $errors = [];
@@ -42,7 +45,10 @@ class BusController
         if (empty($input['capacity']) || !is_numeric($input['capacity']) || (int)$input['capacity'] < 1) {
             $errors[] = 'La capacidad debe ser un número positivo';
         }
-        // TODO: validar que la placa no exista ya en la BD antes de crear
+        $validTypes = ['STANDARD', 'EXPRESS', 'LUXURY'];
+        if (!empty($input['type']) && !in_array($input['type'], $validTypes)) {
+            $errors[] = 'Tipo inválido. Use: ' . implode(', ', $validTypes);
+        }
         if ($errors) {
             Response::error(implode(', ', $errors));
         }
@@ -56,7 +62,7 @@ class BusController
 
     public function update(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->parseJsonBody();
 
         try {
@@ -68,7 +74,7 @@ class BusController
 
     public function destroy(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN');
         try {
             $this->busService->delete($id);
             Response::success(null, 'Bus eliminado');
@@ -77,14 +83,30 @@ class BusController
         }
     }
 
-    private function parseJsonBody(): array
+    public function updateStatus(string $id): void
     {
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            Response::error('Cuerpo JSON inválido o vacío');
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        $input = $this->parseJsonBody();
+
+        if (empty($input['status'])) {
+            Response::error('El estado es requerido');
         }
-        return $input;
+
+        try {
+            Response::success($this->busService->update($id, ['status' => $input['status']]), 'Estado del bus actualizado');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
     }
 
-    // HACK: este metodo se repite en TripController, deberia ir en un trait compartido
+    public function trips(string $id): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
+        try {
+            Response::success($this->busService->getTrips($id));
+        } catch (RuntimeException $e) {
+            Response::notFound($e->getMessage());
+        }
+    }
+
 }

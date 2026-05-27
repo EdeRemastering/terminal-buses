@@ -38,6 +38,19 @@ class DriverProfileRepository
         return $result ?: null;
     }
 
+    public function findByCode(string $code): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT dp.*, u.email, u.name, u.phone
+             FROM driver_profiles dp
+             JOIN users u ON u.id = dp.user_id
+             WHERE dp.code = :code'
+        );
+        $stmt->execute(['code' => $code]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
     public function findByUserId(string $userId): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM driver_profiles WHERE user_id = :user_id');
@@ -115,6 +128,31 @@ class DriverProfileRepository
         $stmt->bindValue('offset', $offset, PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
+    }
+
+    public function updateAvailability(string $id, string $availability): void
+    {
+        $stmt = $this->db->prepare("UPDATE driver_profiles SET availability = :availability WHERE id = :id");
+        $stmt->execute(['id' => $id, 'availability' => $availability]);
+    }
+
+    public function incrementCompletedTrips(string $id): void
+    {
+        $stmt = $this->db->prepare("UPDATE driver_profiles SET completed_trips_count = completed_trips_count + 1 WHERE id = :id");
+        $stmt->execute(['id' => $id]);
+    }
+
+    public function findByLicenseNumber(string $licenseNumber): ?array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT dp.*, u.email, u.name, u.phone
+             FROM driver_profiles dp
+             JOIN users u ON u.id = dp.user_id
+             WHERE dp.license_number = :license_number'
+        );
+        $stmt->execute(['license_number' => $licenseNumber]);
+        $result = $stmt->fetch();
+        return $result ?: null;
     }
 
     public function nextCode(): string

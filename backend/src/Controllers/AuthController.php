@@ -50,4 +50,22 @@ class AuthController
         AuthMiddleware::authenticate();
         Response::success(null, 'Sesión cerrada exitosamente');
     }
+
+    public function register(): void
+    {
+        AuthMiddleware::requireRole('ADMIN');
+        $input = json_decode(file_get_contents('php://input'), true);
+        if (!is_array($input)) Response::error('Cuerpo JSON inválido');
+
+        if (empty($input['email']) || empty($input['password']) || empty($input['name'])) {
+            Response::error('El correo, contraseña y nombre son requeridos');
+        }
+
+        try {
+            $user = $this->authService->register($input);
+            Response::created($user, 'Usuario creado exitosamente');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
 }

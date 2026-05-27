@@ -118,6 +118,133 @@ class TripRepository
         return $map;
     }
 
+    public function findByDriverProfileId(string $driverProfileId, array $statuses = []): array
+    {
+        $sql = 'SELECT t.*, r.name AS route_name, r.origin, r.destination,
+                       b.code AS bus_code, b.capacity,
+                       dp.code AS driver_code, u.name AS driver_name
+                FROM trips t
+                JOIN routes r ON r.id = t.route_id
+                JOIN buses b ON b.id = t.bus_id
+                LEFT JOIN driver_profiles dp ON dp.id = t.driver_profile_id
+                LEFT JOIN users u ON u.id = dp.user_id
+                WHERE t.driver_profile_id = :driver_profile_id';
+
+        $params = ['driver_profile_id' => $driverProfileId];
+
+        if (!empty($statuses)) {
+            $placeholders = [];
+            foreach ($statuses as $i => $s) {
+                $placeholders[] = ":status_$i";
+                $params["status_$i"] = $s;
+            }
+            $sql .= ' AND t.status IN (' . implode(',', $placeholders) . ')';
+        }
+
+        $sql .= ' ORDER BY t.departure_time DESC';
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
+    }
+
+    public function countActiveByBusId(string $busId): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM trips
+             WHERE bus_id = :bus_id
+               AND status NOT IN ('FINISHED', 'CANCELLED')"
+        );
+        $stmt->execute(['bus_id' => $busId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function countActiveByDriverProfileId(string $driverProfileId): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM trips
+             WHERE driver_profile_id = :driver_profile_id
+               AND status NOT IN ('FINISHED', 'CANCELLED')"
+        );
+        $stmt->execute(['driver_profile_id' => $driverProfileId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function countActiveByRouteId(string $routeId): int
+    {
+        $stmt = $this->db->prepare(
+            "SELECT COUNT(*) FROM trips
+             WHERE route_id = :route_id
+               AND status NOT IN ('FINISHED', 'CANCELLED')"
+        );
+        $stmt->execute(['route_id' => $routeId]);
+        return (int) $stmt->fetchColumn();
+    }
+
+    public function existsOverlappingBusTrip(string $busId, string $departureTime, string $arrivalTime, ?string $excludeTripId = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM trips
+                WHERE bus_id = :bus_id
+                  AND status NOT IN ('FINISHED', 'CANCELLED')
+                  AND departure_time < :arrival_time
+                  AND arrival_time > :departure_time";
+        $params = [
+            'bus_id'         => $busId,
+            'departure_time' => $departureTime,
+            'arrival_time'   => $arrivalTime,
+        ];
+
+        if ($excludeTripId !== null) {
+            $sql .= " AND id != :exclude_id";
+            $params['exclude_id'] = $excludeTripId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function existsOverlappingDriverTrip(string $driverProfileId, string $departureTime, string $arrivalTime, ?string $excludeTripId = null): bool
+    {
+        $sql = "SELECT COUNT(*) FROM trips
+                WHERE driver_profile_id = :driver_profile_id
+                  AND status NOT IN ('FINISHED', 'CANCELLED')
+                  AND departure_time < :arrival_time
+                  AND arrival_time > :departure_time";
+        $params = [
+            'driver_profile_id' => $driverProfileId,
+            'departure_time'    => $departureTime,
+            'arrival_time'      => $arrivalTime,
+        ];
+
+        if ($excludeTripId !== null) {
+            $sql .= " AND id != :exclude_id";
+            $params['exclude_id'] = $excludeTripId;
+        }
+
+        $stmt = $this->db->prepare($sql);
+        $stmt->execute($params);
+        return (int) $stmt->fetchColumn() > 0;
+    }
+
+    public function findByBusId(string $busId): array
+    {
+        $stmt = $this->db->prepare(
+            'SELECT t.*, r.name AS route_name, r.origin, r.destination,
+                    b.code AS bus_code, b.capacity,
+                    dp.code AS driver_code, u.name AS driver_name
+             FROM trips t
+             JOIN routes r ON r.id = t.route_id
+             JOIN buses b ON b.id = t.bus_id
+             LEFT JOIN driver_profiles dp ON dp.id = t.driver_profile_id
+             LEFT JOIN users u ON u.id = dp.user_id
+             WHERE t.bus_id = :bus_id
+             ORDER BY t.departure_time DESC'
+        );
+        $stmt->execute(['bus_id' => $busId]);
+        return $stmt->fetchAll();
+    }
+
     public function findById(string $id): ?array
     {
         // LEFT JOIN porque un viaje puede no tener conductor asignado aun

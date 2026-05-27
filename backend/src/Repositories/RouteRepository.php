@@ -28,6 +28,14 @@ class RouteRepository
         return $result ?: null;
     }
 
+    public function findByName(string $name): ?array
+    {
+        $stmt = $this->db->prepare('SELECT * FROM routes WHERE name = :name');
+        $stmt->execute(['name' => $name]);
+        $result = $stmt->fetch();
+        return $result ?: null;
+    }
+
     public function findByCode(string $code): ?array
     {
         $stmt = $this->db->prepare('SELECT * FROM routes WHERE code = :code');

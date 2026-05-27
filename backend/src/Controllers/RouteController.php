@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Helpers\JsonBodyTrait;
 use App\Helpers\Response;
 use App\Middleware\AuthMiddleware;
 use App\Services\RouteService;
@@ -9,13 +10,15 @@ use RuntimeException;
 
 class RouteController
 {
+    use JsonBodyTrait;
+
     public function __construct(
         private RouteService $routeService = new RouteService(),
     ) {}
 
     public function index(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         $page = max(1, (int) ($_GET['page'] ?? 1));
         $perPage = min(1000, max(1, (int) ($_GET['perPage'] ?? 100)));
         Response::success($this->routeService->getAll($page, $perPage));
@@ -23,7 +26,7 @@ class RouteController
 
     public function show(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY', 'DRIVER');
         try {
             Response::success($this->routeService->getById($id));
         } catch (RuntimeException $e) {
@@ -33,7 +36,7 @@ class RouteController
 
     public function store(): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->parseJsonBody();
 
         $missing = array_diff(['name', 'origin', 'destination'], array_keys($input));
@@ -54,7 +57,7 @@ class RouteController
 
     public function update(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
         $input = $this->parseJsonBody();
 
         try {
@@ -64,9 +67,25 @@ class RouteController
         }
     }
 
+    public function updateStatus(string $id): void
+    {
+        AuthMiddleware::requireRole('ADMIN', 'SECRETARY');
+        $input = $this->parseJsonBody();
+
+        if (empty($input['status'])) {
+            Response::error('El estado es requerido');
+        }
+
+        try {
+            Response::success($this->routeService->update($id, ['status' => $input['status']]), 'Estado de la ruta actualizado');
+        } catch (RuntimeException $e) {
+            Response::error($e->getMessage(), 422);
+        }
+    }
+
     public function destroy(string $id): void
     {
-        AuthMiddleware::authenticate();
+        AuthMiddleware::requireRole('ADMIN');
         try {
             $this->routeService->delete($id);
             Response::success(null, 'Ruta eliminada');
@@ -75,12 +94,4 @@ class RouteController
         }
     }
 
-    private function parseJsonBody(): array
-    {
-        $input = json_decode(file_get_contents('php://input'), true);
-        if (!is_array($input)) {
-            Response::error('Cuerpo JSON inválido o vacío');
-        }
-        return $input;
-    }
 }
