@@ -1,9 +1,14 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { AnimatePresence } from 'framer-motion';
 import { useBuses } from '@/modules/buses/hooks/useBuses';
+import { useDeleteBus } from '@/modules/buses/hooks/useDeleteBus';
+import { useUpdateBusStatus } from '@/modules/buses/hooks/useUpdateBusStatus';
 import type { Bus } from '@/modules/buses/types';
 import { CreateBusDialog } from '@/modules/buses/components/CreateBusDialog';
+import { EditBusDialog } from '@/modules/buses/components/EditBusDialog';
+import { BusesHistoryDialog } from '@/modules/buses/components/BusesHistoryDialog';
 import { BusesPageHeader } from '@/modules/buses/components/BusesPageHeader';
 import { BusesStatsCards } from '@/modules/buses/components/BusesStatsCards';
 import { BusesFiltersPanel } from '@/modules/buses/components/BusesFiltersPanel';
@@ -19,6 +24,10 @@ export const BusesPage = () => {
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [typeFilter, setTypeFilter] = useState<string>('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingBus, setEditingBus] = useState<Bus | null>(null);
+  const [historyBus, setHistoryBus] = useState<Bus | null>(null);
+  const { mutate: deleteBus } = useDeleteBus();
+  const { mutate: updateBusStatus } = useUpdateBusStatus();
 
   const stats = !buses ? { total: 0, operational: 0, maintenance: 0, outOfService: 0 } : {
     total: buses.length,
@@ -40,17 +49,18 @@ export const BusesPage = () => {
     });
   }, [buses, searchTerm, statusFilter, typeFilter]);
 
-  // Optimistic update: refleja el cambio en UI antes de que el backend confirme
   const handleToggleStatus = (id: string, newStatus: Bus['status']) => {
-    queryClient.setQueryData<Bus[]>(['buses'], (old) =>
-      old ? old.map(bus => bus.id === id ? { ...bus, status: newStatus } : bus) : old
-    );
+    updateBusStatus({ id, status: newStatus });
   };
 
   const handleDeleteBus = (id: string) => {
-    queryClient.setQueryData<Bus[]>(['buses'], (old) =>
-      old ? old.filter(bus => bus.id !== id) : old
-    );
+    deleteBus(id, {
+      onSuccess: () => toast.success('Bus eliminado'),
+      onError: () => {
+        toast.error('Error al eliminar el bus');
+        queryClient.invalidateQueries({ queryKey: ['buses'] });
+      },
+    });
   };
 
   const handleResetFilters = () => {
@@ -59,7 +69,7 @@ export const BusesPage = () => {
     setTypeFilter('ALL');
   };
 
-  if (isError) return <BusesErrorState message={(error as Error).message} onRetry={() => window.location.reload()} />;
+  if (isError) return <BusesErrorState message={(error as Error).message} onRetry={() => queryClient.refetchQueries({ queryKey: ['buses'] })} />;
 
   return (
     <><main className="w-full max-w-7xl mx-auto space-y-8 pb-12">
@@ -84,6 +94,8 @@ export const BusesPage = () => {
                 bus={bus}
                 onToggleStatus={handleToggleStatus}
                 onDelete={handleDeleteBus}
+                onEdit={setEditingBus}
+                onViewHistory={setHistoryBus}
               />
             ))}
           </AnimatePresence>
@@ -92,6 +104,16 @@ export const BusesPage = () => {
       {!isLoading && filteredBuses.length === 0 && <BusesEmptyState onResetFilters={handleResetFilters} />}
     </main>
       <CreateBusDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <EditBusDialog
+        open={!!editingBus}
+        onOpenChange={(open) => { if (!open) setEditingBus(null); }}
+        bus={editingBus}
+      />
+      <BusesHistoryDialog
+        open={!!historyBus}
+        onOpenChange={(open) => { if (!open) setHistoryBus(null); }}
+        bus={historyBus}
+      />
     </>
   );
 };

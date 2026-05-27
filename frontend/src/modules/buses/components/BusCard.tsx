@@ -4,12 +4,11 @@ import {
   Gauge,
   Calendar,
   MoreVertical,
-  CheckCircle2,
-  Wrench,
-  Ban,
+  Pencil,
   Trash2,
   Hash,
-  Users
+  Users,
+  Clock
 } from 'lucide-react';
 import { Badge } from '@/common/components/ui/badge';
 import { Card } from '@/common/components/ui/card';
@@ -20,17 +19,20 @@ import {
   DropdownMenuTrigger
 } from '@/common/components/ui/dropdown-menu';
 import { Button } from '@/common/components/ui/button';
+import { PermissionGate } from '@/common/components/PermissionGate';
 import { cn } from '@/common/utils';
 import type { Bus } from '@/modules/buses/types';
-import { statusConfig, typeLabels } from '@/modules/buses/components/busConfig';
+import { statusConfig, typeLabels, busStatusOptions } from '@/modules/buses/components/busConfig';
 
 interface BusCardProps {
   bus: Bus;
   onToggleStatus: (id: string, status: Bus['status']) => void;
   onDelete: (id: string) => void;
+  onEdit?: (bus: Bus) => void;
+  onViewHistory?: (bus: Bus) => void;
 }
 
-export const BusCard = ({ bus, onToggleStatus, onDelete }: BusCardProps) => {
+export const BusCard = ({ bus, onToggleStatus, onDelete, onEdit, onViewHistory }: BusCardProps) => {
   const status = statusConfig[bus.status];
   const StatusIcon = status.icon;
 
@@ -43,7 +45,6 @@ export const BusCard = ({ bus, onToggleStatus, onDelete }: BusCardProps) => {
       transition={{ duration: 0.25 }}
     >
       <Card className="group relative border-none shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 overflow-hidden bg-card/85 backdrop-blur-sm p-6 flex flex-col h-full justify-between">
-        {/* Barra de estado superior: verde operativo, amarillo mantenimiento, rojo fuera de servicio */}
         <div className={cn(
           "absolute top-0 left-0 w-full h-1.5 transition-colors",
           bus.status === 'OPERATIONAL' ? 'bg-emerald-500' :
@@ -109,30 +110,41 @@ export const BusCard = ({ bus, onToggleStatus, onDelete }: BusCardProps) => {
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl p-2">
+                <PermissionGate permission="bus:edit">
+                  <DropdownMenuItem
+                    onClick={() => onEdit?.(bus)}
+                    className="rounded-lg gap-2 font-medium"
+                  >
+                    <Pencil className="w-4 h-4" /> Editar Unidad
+                  </DropdownMenuItem>
+                </PermissionGate>
                 <DropdownMenuItem
-                  onClick={() => onToggleStatus(bus.id, 'OPERATIONAL')}
-                  className="rounded-lg text-emerald-600 dark:text-emerald-400 gap-2 font-medium"
+                  onClick={() => onViewHistory?.(bus)}
+                  className="rounded-lg gap-2 font-medium"
                 >
-                  <CheckCircle2 className="w-4 h-4" /> Marcar Operativo
+                  <Clock className="w-4 h-4" /> Ver Historial
                 </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onToggleStatus(bus.id, 'MAINTENANCE')}
-                  className="rounded-lg text-amber-600 dark:text-amber-400 gap-2 font-medium"
-                >
-                  <Wrench className="w-4 h-4" /> Enviar a Taller
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onToggleStatus(bus.id, 'OUT_OF_SERVICE')}
-                  className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium"
-                >
-                  <Ban className="w-4 h-4" /> Poner Inactivo
-                </DropdownMenuItem>
-                <DropdownMenuItem
-                  onClick={() => onDelete(bus.id)}
-                  className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
-                >
-                  <Trash2 className="w-4 h-4" /> Eliminar Unidad
-                </DropdownMenuItem>
+                <PermissionGate permission="bus:edit">
+                  {busStatusOptions
+                    .filter(opt => opt.value !== bus.status)
+                    .map(opt => (
+                      <DropdownMenuItem
+                        key={opt.value}
+                        onClick={() => onToggleStatus(bus.id, opt.value)}
+                        className={`rounded-lg ${opt.className} gap-2 font-medium`}
+                      >
+                        <opt.icon className="w-4 h-4" /> {opt.label}
+                      </DropdownMenuItem>
+                    ))}
+                </PermissionGate>
+                <PermissionGate permission="bus:delete">
+                  <DropdownMenuItem
+                    onClick={() => onDelete(bus.id)}
+                    className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
+                  >
+                    <Trash2 className="w-4 h-4" /> Eliminar Unidad
+                  </DropdownMenuItem>
+                </PermissionGate>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>

@@ -1,5 +1,6 @@
 export interface Bus {
   id: string;
+  code: string;
   plate: string;
   model: string;
   capacity: number;

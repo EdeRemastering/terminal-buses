@@ -18,6 +18,18 @@ export const statusConfig: Record<string, { label: string; color: string; icon: 
   }
 } as const;
 
+export const busStatusOptions = [
+  { value: 'OPERATIONAL' as const, label: 'Marcar Operativo', icon: CheckCircle2, className: 'text-emerald-600 dark:text-emerald-400' },
+  { value: 'MAINTENANCE' as const, label: 'Enviar a Taller', icon: Wrench, className: 'text-amber-600 dark:text-amber-400' },
+  { value: 'OUT_OF_SERVICE' as const, label: 'Poner Inactivo', icon: Ban, className: 'text-rose-600 dark:text-rose-400' },
+];
+
+export const BUS_TYPES = [
+  { value: 'LUXURY' as const, label: 'Servicio de Lujo' },
+  { value: 'EXPRESS' as const, label: 'Servicio Exprés' },
+  { value: 'STANDARD' as const, label: 'Servicio Estándar' },
+];
+
 export const typeLabels: Record<string, string> = {
   LUXURY: 'Servicio de Lujo',
   EXPRESS: 'Servicio Exprés',
