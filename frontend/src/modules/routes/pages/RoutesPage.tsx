@@ -1,9 +1,13 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { useRoutes } from '@/modules/routes/hooks/useRoutes';
+import { useDeleteRoute } from '@/modules/routes/hooks/useDeleteRoute';
+import { useUpdateRouteStatus } from '@/modules/routes/hooks/useUpdateRouteStatus';
 import { AnimatePresence } from 'framer-motion';
 import type { Route } from '@/modules/routes/schemas/routeSchema';
 import { CreateRouteDialog } from '@/modules/routes/components/CreateRouteDialog';
+import { EditRouteDialog } from '@/modules/routes/components/EditRouteDialog';
 import { RoutesPageHeader } from '@/modules/routes/components/RoutesPageHeader';
 import { RoutesStatsCards } from '@/modules/routes/components/RoutesStatsCards';
 import { RoutesFilters } from '@/modules/routes/components/RoutesFilters';
@@ -15,7 +19,10 @@ import { RouteCardSkeleton } from '@/modules/routes/components/RouteCardSkeleton
 export const RoutesPage = () => {
   const { data: routes, isLoading, isError, error } = useRoutes();
   const queryClient = useQueryClient();
+  const { mutate: deleteRoute } = useDeleteRoute();
+  const { mutate: updateRouteStatus } = useUpdateRouteStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingRoute, setEditingRoute] = useState<Route | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
@@ -39,15 +46,17 @@ export const RoutesPage = () => {
   }, [routes, searchTerm, statusFilter]);
 
   const handleToggleStatus = (id: string, newStatus: Route['status']) => {
-    queryClient.setQueryData<Route[]>(['routes'], (old) =>
-      old ? old.map(r => r.id === id ? { ...r, status: newStatus } : r) : old
-    );
+    updateRouteStatus({ id, status: newStatus });
   };
 
   const handleDelete = (id: string) => {
-    queryClient.setQueryData<Route[]>(['routes'], (old) =>
-      old ? old.filter(r => r.id !== id) : old
-    );
+    deleteRoute(id, {
+      onSuccess: () => toast.success('Ruta eliminada'),
+      onError: () => {
+        toast.error('Error al eliminar la ruta');
+        queryClient.invalidateQueries({ queryKey: ['routes'] });
+      },
+    });
   };
 
   const handleResetFilters = () => {
@@ -55,7 +64,7 @@ export const RoutesPage = () => {
     setStatusFilter('ALL');
   };
 
-  if (isError) return <RoutesErrorState message={(error as Error).message} onRetry={() => window.location.reload()} />;
+  if (isError) return <RoutesErrorState message={(error as Error).message} onRetry={() => queryClient.refetchQueries({ queryKey: ['routes'] })} />;
 
   return (
     <>
@@ -85,13 +94,14 @@ export const RoutesPage = () => {
           ) : (
             <AnimatePresence mode="popLayout">
               {filteredRoutes.map((r, index) => (
-                <RouteCard
-                  key={r.id}
-                  route={r}
-                  index={index}
-                  onToggleStatus={handleToggleStatus}
-                  onDelete={handleDelete}
-                />
+                  <RouteCard
+                    key={r.id}
+                    route={r}
+                    index={index}
+                    onToggleStatus={handleToggleStatus}
+                    onDelete={handleDelete}
+                    onEdit={setEditingRoute}
+                  />
               ))}
             </AnimatePresence>
           )}
@@ -103,6 +113,11 @@ export const RoutesPage = () => {
       </main>
 
       <CreateRouteDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <EditRouteDialog
+        open={!!editingRoute}
+        onOpenChange={(open) => { if (!open) setEditingRoute(null); }}
+        route={editingRoute}
+      />
     </>
   );
 };

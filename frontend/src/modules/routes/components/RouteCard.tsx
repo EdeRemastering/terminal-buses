@@ -5,6 +5,7 @@ import {
   Clock,
   DollarSign,
   MoreVertical,
+  Pencil,
   Trash2,
   CheckCircle2,
   UserX
@@ -18,17 +19,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger
 } from '@/common/components/ui/dropdown-menu';
-import { cn } from '@/common/utils';
+import { PermissionGate } from '@/common/components/PermissionGate';
+import { cn, formatCurrency } from '@/common/utils';
 import type { Route } from '@/modules/routes/schemas/routeSchema';
 
 interface RouteCardProps {
   route: Route;
   onToggleStatus: (id: string, status: Route['status']) => void;
   onDelete: (id: string) => void;
+  onEdit?: (route: Route) => void;
   index?: number;
 }
 
-export const RouteCard = ({ route, onToggleStatus, onDelete, index = 0 }: RouteCardProps) => (
+export const RouteCard = ({ route, onToggleStatus, onDelete, onEdit, index = 0 }: RouteCardProps) => (
   <motion.div
     key={route.id}
     layout
@@ -74,27 +77,39 @@ export const RouteCard = ({ route, onToggleStatus, onDelete, index = 0 }: RouteC
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="rounded-xl p-2">
-                {route.status === 'ACTIVE' ? (
+                <PermissionGate permission="route:edit">
+                  {route.status === 'ACTIVE' ? (
+                    <DropdownMenuItem
+                      onClick={() => onToggleStatus(route.id, 'INACTIVE')}
+                      className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium"
+                    >
+                      <UserX className="w-4 h-4" /> Desactivar Ruta
+                    </DropdownMenuItem>
+                  ) : (
+                    <DropdownMenuItem
+                      onClick={() => onToggleStatus(route.id, 'ACTIVE')}
+                      className="rounded-lg text-emerald-600 dark:text-emerald-400 gap-2 font-medium"
+                    >
+                      <CheckCircle2 className="w-4 h-4" /> Activar Ruta
+                    </DropdownMenuItem>
+                  )}
+                </PermissionGate>
+                <PermissionGate permission="route:edit">
                   <DropdownMenuItem
-                    onClick={() => onToggleStatus(route.id, 'INACTIVE')}
-                    className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium"
+                    onClick={() => onEdit?.(route)}
+                    className="rounded-lg gap-2 font-medium"
                   >
-                    <UserX className="w-4 h-4" /> Desactivar Ruta
+                    <Pencil className="w-4 h-4" /> Editar Ruta
                   </DropdownMenuItem>
-                ) : (
+                </PermissionGate>
+                <PermissionGate permission="route:delete">
                   <DropdownMenuItem
-                    onClick={() => onToggleStatus(route.id, 'ACTIVE')}
-                    className="rounded-lg text-emerald-600 dark:text-emerald-400 gap-2 font-medium"
+                    onClick={() => onDelete(route.id)}
+                    className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
                   >
-                    <CheckCircle2 className="w-4 h-4" /> Activar Ruta
+                    <Trash2 className="w-4 h-4" /> Eliminar Ruta
                   </DropdownMenuItem>
-                )}
-                <DropdownMenuItem
-                  onClick={() => onDelete(route.id)}
-                  className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
-                >
-                  <Trash2 className="w-4 h-4" /> Eliminar Ruta
-                </DropdownMenuItem>
+                </PermissionGate>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -117,7 +132,7 @@ export const RouteCard = ({ route, onToggleStatus, onDelete, index = 0 }: RouteC
             <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
               <DollarSign className="w-3.5 h-3.5 text-primary" /> Precio Base
             </p>
-            <p className="text-xs font-semibold text-primary font-bold">${route.basePrice}</p>
+            <p className="text-xs font-semibold text-primary font-bold">{formatCurrency(route.basePrice)}</p>
           </div>
         </div>
       </div>

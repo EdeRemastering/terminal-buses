@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
+import { PermissionGate } from '@/common/components/PermissionGate';
 
 interface RoutesPageHeaderProps {
   onCreateClick: () => void;
@@ -11,9 +12,11 @@ export const RoutesPageHeader = ({ onCreateClick }: RoutesPageHeaderProps) => (
       <h1 className="text-3xl font-bold tracking-tight">Rutas Conectadas</h1>
       <p className="text-muted-foreground mt-1">Planificación de trayectos, paradas intermedias y tarifas de viaje</p>
     </div>
-    <Button onClick={onCreateClick} className="rounded-xl shadow-lg shadow-primary/20 h-11 px-6">
-      <Plus className="w-4 h-4 mr-2" />
-      Nueva Ruta
-    </Button>
+    <PermissionGate permission="route:create">
+      <Button onClick={onCreateClick} className="rounded-xl shadow-lg shadow-primary/20 h-11 px-6">
+        <Plus className="w-4 h-4 mr-2" />
+        Nueva Ruta
+      </Button>
+    </PermissionGate>
   </div>
 );
