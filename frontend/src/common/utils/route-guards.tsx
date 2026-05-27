@@ -41,9 +41,13 @@ export const PublicGuard = ({ children }: GuardProps) => {
 };
 
 export const RoleGuard = ({ children, allowedRoles }: RoleGuardProps) => {
-  const { user, isAuthenticated } = useAuth();
+  const { effectiveRole, isAuthenticated, isLoading } = useAuth();
 
-  if (!isAuthenticated || !user || !allowedRoles.includes(user.role)) {
+  if (isLoading) {
+    return <div className="flex items-center justify-center h-screen text-muted-foreground">Cargando...</div>;
+  }
+
+  if (!isAuthenticated || !effectiveRole || !allowedRoles.includes(effectiveRole)) {
     return <Navigate to="/unauthorized" replace />;
   }
 
