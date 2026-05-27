@@ -1,20 +1,19 @@
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createDriver } from '@/modules/drivers/api/createDriver';
+import { deleteDriver } from '@/modules/drivers/api/deleteDriver';
 import { getErrorMessage } from '@/common/utils';
-import type { CreateDriverInput } from '@/modules/drivers/schemas/driverSchema';
 import type { Driver } from '@/modules/drivers/types';
 
-export const useCreateDriver = () => {
+export const useDeleteDriver = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<Driver, Error, CreateDriverInput>({
-    mutationFn: createDriver,
-    onSuccess: (newDriver) => {
+  return useMutation<void, Error, string>({
+    mutationFn: deleteDriver,
+    onSuccess: (_, id) => {
       queryClient.setQueryData<Driver[]>(['drivers'], (old) =>
-        old ? [...old, newDriver] : [newDriver]
+        old ? old.filter(d => d.id !== id) : old
       );
-      toast.success('Conductor creado exitosamente');
+      toast.success('Conductor eliminado exitosamente');
     },
     onError: (err) => {
       toast.error(getErrorMessage(err));
