@@ -28,10 +28,11 @@ export const createTripSchema = z.object({
     .string()
     .min(3, 'El ID del bus debe tener al menos 3 caracteres')
     .max(20, 'El ID del bus no puede exceder 20 caracteres'),
+  driverId: z.string().optional(),
   price: z
     .number()
     .min(1, 'El precio debe ser al menos 1')
-    .max(10000, 'El precio no puede exceder 10,000'),
+    .max(1_000_000, 'El precio no puede exceder 1,000,000'),
 });
 
 export type TripFormData = z.infer<typeof createTripSchema>;

@@ -1,4 +1,3 @@
-// Mapeo de estados del viaje con colores semanticos para los badges
 export const statusConfig = {
   PENDING: { label: 'Programado', color: 'bg-amber-100 text-amber-700 border-amber-200' },
   BOARDING: { label: 'Abordando', color: 'bg-emerald-100 text-emerald-700 border-emerald-200' },

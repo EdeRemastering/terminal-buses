@@ -3,7 +3,6 @@ import { useTrips } from '@/modules/trips/hooks/useTrips';
 import { CreateTripDialog } from '@/modules/trips/components/CreateTripDialog';
 import { EditTripDialog } from '@/modules/trips/components/EditTripDialog';
 import { TripManageDialog } from '@/modules/trips/components/TripManageDialog';
-import { TripPassengersDialog } from '@/modules/trips/components/TripPassengersDialog';
 import { ConfirmCancelDialog } from '@/modules/trips/components/ConfirmCancelDialog';
 import { TripsPageHeader } from '@/modules/trips/components/TripsPageHeader';
 import { TripsSearchFilters } from '@/modules/trips/components/TripsSearchFilters';
@@ -11,16 +10,16 @@ import { TripCard } from '@/modules/trips/components/TripCard';
 import { TripCardSkeleton } from '@/modules/trips/components/TripCardSkeleton';
 import { TripsErrorState } from '@/modules/trips/components/TripsErrorState';
 import { TripsEmptyState } from '@/modules/trips/components/TripsEmptyState';
+import { useUpdateTripStatus } from '@/modules/trips/hooks/useUpdateTripStatus';
 import type { Trip, TripStatus } from '@/modules/trips/types';
 
 export const TripsPage = () => {
   const { data: trips, isLoading, isError, error } = useTrips();
+  const { mutate: updateStatus } = useUpdateTripStatus();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
   const [managingTrip, setManagingTrip] = useState<Trip | null>(null);
-  const [passengersTrip, setPassengersTrip] = useState<Trip | null>(null);
   const [cancellingTrip, setCancellingTrip] = useState<Trip | null>(null);
-  // TODO: considerar useReducer en lugar de 5 useState para los dialogos
   const [searchValue, setSearchValue] = useState('');
   const [statusFilter, setStatusFilter] = useState<TripStatus | 'ALL'>('ALL');
   const [dateFilter, setDateFilter] = useState<'ALL' | 'TODAY' | 'WEEK'>('ALL');
@@ -44,7 +43,6 @@ export const TripsPage = () => {
       filtered = filtered.filter(t => t.status === statusFilter);
     }
 
-    // Filtro por fecha: hoy o esta semana (desde el inicio del dia actual)
     if (dateFilter !== 'ALL') {
       const today = new Date();
       const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
@@ -93,8 +91,8 @@ export const TripsPage = () => {
                 index={index}
                 onManage={setManagingTrip}
                 onEdit={setEditingTrip}
-                onViewPassengers={setPassengersTrip}
                 onCancel={setCancellingTrip}
+                onStatusChange={(t, status) => updateStatus({ id: t.id, status })}
               />
             ))
           )}
@@ -104,16 +102,13 @@ export const TripsPage = () => {
       </main>
       <CreateTripDialog open={dialogOpen} onOpenChange={setDialogOpen} />
       <EditTripDialog open={!!editingTrip} onOpenChange={(open) => { if (!open) setEditingTrip(null); }} trip={editingTrip} />
-      {/* HACK: retraso para que el dialogo anterior se cierre antes de abrir el siguiente */}
       <TripManageDialog
         open={!!managingTrip}
         onOpenChange={(open) => { if (!open) setManagingTrip(null); }}
         trip={managingTrip}
         onEdit={(t) => { setManagingTrip(null); setTimeout(() => setEditingTrip(t), 100); }}
-        onViewPassengers={(t) => { setManagingTrip(null); setTimeout(() => setPassengersTrip(t), 100); }}
         onCancel={(t) => { setManagingTrip(null); setTimeout(() => setCancellingTrip(t), 100); }}
       />
-      <TripPassengersDialog open={!!passengersTrip} onOpenChange={(open) => { if (!open) setPassengersTrip(null); }} trip={passengersTrip} />
       <ConfirmCancelDialog open={!!cancellingTrip} onOpenChange={(open) => { if (!open) setCancellingTrip(null); }} trip={cancellingTrip} />
     </>
   );

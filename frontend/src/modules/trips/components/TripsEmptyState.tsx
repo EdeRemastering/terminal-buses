@@ -1,5 +1,6 @@
 import { Bus as BusIcon } from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
+import { PermissionGate } from '@/common/components/PermissionGate';
 
 interface TripsEmptyStateProps {
   onCreateClick?: () => void;
@@ -14,6 +15,8 @@ export const TripsEmptyState = ({ onCreateClick }: TripsEmptyStateProps) => (
       <h3 className="text-xl font-bold">No hay viajes programados</h3>
       <p className="text-muted-foreground max-w-xs mx-auto">Comienza programando una nueva ruta para hoy.</p>
     </div>
-    <Button className="rounded-xl" onClick={onCreateClick}>Programar Primer Viaje</Button>
+    <PermissionGate permission="trip:create">
+      <Button className="rounded-xl" onClick={onCreateClick}>Programar Primer Viaje</Button>
+    </PermissionGate>
   </div>
 );
