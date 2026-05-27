@@ -1,5 +1,7 @@
+import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { cancelTrip } from '@/modules/trips/api/cancelTrip';
+import { getErrorMessage } from '@/common/utils';
 import type { Trip } from '@/modules/trips/types';
 
 export const useCancelTrip = () => {
@@ -11,6 +13,10 @@ export const useCancelTrip = () => {
       queryClient.setQueryData<Trip[]>(['trips'], (old) =>
         old ? old.map(t => t.id === updatedTrip.id ? updatedTrip : t) : [updatedTrip]
       );
+      toast.success('Viaje cancelado exitosamente');
+    },
+    onError: (err) => {
+      toast.error(getErrorMessage(err));
     },
   });
 };
