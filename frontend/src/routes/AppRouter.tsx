@@ -1,3 +1,4 @@
+import { type ReactNode } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { PublicLayout } from '@/common/layouts/PublicLayout';
 import { PrivateLayout } from '@/common/layouts/PrivateLayout';
@@ -8,9 +9,13 @@ import { BusesPage } from '@/modules/buses/pages/BusesPage';
 import { PassengersPage } from '@/modules/passengers/pages/PassengersPage';
 import { DriversPage } from '@/modules/drivers/pages/DriversPage';
 import { RoutesPage } from '@/modules/routes/pages/RoutesPage';
-import { AuthGuard, PublicGuard } from '@/common/utils/route-guards';
+import { AuthGuard, PublicGuard, RoleGuard } from '@/common/utils/route-guards';
+import type { Role } from '@/common/types';
 
-// Raiz redirige al dashboard, el login es la unica ruta publica
+const privateWithRoles = (element: ReactNode, allowedRoles: Role[]) => (
+  <RoleGuard allowedRoles={allowedRoles}>{element}</RoleGuard>
+);
+
 const router = createBrowserRouter([
   {
     path: '/',
@@ -38,27 +43,27 @@ const router = createBrowserRouter([
     children: [
       {
         path: 'dashboard',
-        element: <DashboardPage />,
+        element: privateWithRoles(<DashboardPage />, ['ADMIN', 'SECRETARY', 'DRIVER']),
       },
       {
         path: 'trips',
-        element: <TripsPage />,
+        element: privateWithRoles(<TripsPage />, ['ADMIN', 'SECRETARY', 'DRIVER']),
       },
       {
         path: 'buses',
-        element: <BusesPage />,
+        element: privateWithRoles(<BusesPage />, ['ADMIN', 'SECRETARY', 'DRIVER']),
       },
       {
         path: 'routes',
-        element: <RoutesPage />,
+        element: privateWithRoles(<RoutesPage />, ['ADMIN', 'SECRETARY', 'DRIVER']),
       },
       {
         path: 'passengers',
-        element: <PassengersPage />,
+        element: privateWithRoles(<PassengersPage />, ['ADMIN', 'SECRETARY']),
       },
       {
         path: 'drivers',
-        element: <DriversPage />,
+        element: privateWithRoles(<DriversPage />, ['ADMIN', 'SECRETARY']),
       },
     ],
   },

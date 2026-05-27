@@ -4,14 +4,22 @@ import {
   Users, 
   Map as MapIcon, 
   LayoutDashboard, 
-  Settings, 
   LogOut,
-  UserCircle
+  UserCircle,
+  Eye,
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/modules/auth/hooks/useAuth';
+import type { Role } from '@/common/types';
 import { cn } from '@/common/utils';
 import { Button } from '@/common/components/ui/button';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/common/components/ui/select';
 import {
   Sidebar,
   SidebarContent,
@@ -24,24 +32,45 @@ import {
   SidebarGroupLabel,
 } from '@/common/components/ui/sidebar';
 
-const navItems = [
-  { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-  { label: 'Viajes', path: '/trips', icon: Calendar, badge: 'En vivo' },
-  { label: 'Buses', path: '/buses', icon: Bus },
-  { label: 'Rutas', path: '/routes', icon: MapIcon },
-  { label: 'Pasajeros', path: '/passengers', icon: Users },
-  { label: 'Conductores', path: '/drivers', icon: UserCircle },
-];
+interface NavItem { label: string; path: string; icon: React.ComponentType<{ className?: string }>; badge?: string; }
+
+const roleNavItems: Record<string, NavItem[]> = {
+  ADMIN: [
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Viajes', path: '/trips', icon: Calendar, badge: 'En vivo' },
+    { label: 'Buses', path: '/buses', icon: Bus },
+    { label: 'Rutas', path: '/routes', icon: MapIcon },
+    { label: 'Pasajeros', path: '/passengers', icon: Users },
+    { label: 'Conductores', path: '/drivers', icon: UserCircle },
+  ],
+  SECRETARY: [
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Viajes', path: '/trips', icon: Calendar, badge: 'En vivo' },
+    { label: 'Buses', path: '/buses', icon: Bus },
+    { label: 'Rutas', path: '/routes', icon: MapIcon },
+    { label: 'Pasajeros', path: '/passengers', icon: Users },
+    { label: 'Conductores', path: '/drivers', icon: UserCircle },
+  ],
+  DRIVER: [
+    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+    { label: 'Viajes', path: '/trips', icon: Calendar, badge: 'En vivo' },
+    { label: 'Buses', path: '/buses', icon: Bus },
+    { label: 'Rutas', path: '/routes', icon: MapIcon },
+  ],
+};
 
 export const AppSidebar = () => {
   const location = useLocation();
-  const { user, logout } = useAuth();
+  const { user, effectiveRole, previewRole, setPreviewRole, clearPreviewRole, logout } = useAuth();
   const navigate = useNavigate();
+  const navItems = roleNavItems[effectiveRole ?? 'DRIVER'] ?? roleNavItems.DRIVER;
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
+
+  const isPreviewing = previewRole !== null;
 
   return (
     <Sidebar variant="inset" collapsible="icon">
@@ -57,6 +86,15 @@ export const AppSidebar = () => {
       </SidebarHeader>
 
       <SidebarContent>
+        {isPreviewing && (
+          <div className="mx-3 mb-2 px-3 py-2 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 group-data-[collapsible=icon]:hidden">
+            <Eye className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+            <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400">
+              Vista previa: {previewRole}
+            </span>
+          </div>
+        )}
+
         <SidebarGroup>
           <SidebarGroupLabel className="px-6 mb-2">Operaciones</SidebarGroupLabel>
           <SidebarMenu>
@@ -91,29 +129,47 @@ export const AppSidebar = () => {
           </SidebarMenu>
         </SidebarGroup>
 
-        <SidebarGroup className="mt-auto">
-           <SidebarGroupLabel className="px-6 mb-2">Configuración</SidebarGroupLabel>
-           <SidebarMenu>
-               <SidebarMenuItem>
-                <SidebarMenuButton asChild tooltip="Ajustes" className="h-11 px-4 mx-2 rounded-xl text-muted-foreground hover:text-foreground">
-                  <Link to="/dashboard">
-                    <Settings className="w-5 h-5" />
-                    <span className="font-medium">Ajustes</span>
-                  </Link>
-                </SidebarMenuButton>
-              </SidebarMenuItem>
-           </SidebarMenu>
-        </SidebarGroup>
       </SidebarContent>
 
-      <SidebarFooter className="p-4 border-t border-sidebar-border">
+      <SidebarFooter className="p-4 border-t border-sidebar-border space-y-2">
+        {user?.role === 'ADMIN' && (
+          <div className="flex items-center gap-2 px-2 group-data-[collapsible=icon]:hidden">
+            <Eye className="w-3.5 h-3.5 text-muted-foreground shrink-0" />
+            <Select
+              value={previewRole ?? 'ADMIN'}
+              onValueChange={(val) => {
+                if (val === user.role) {
+                  clearPreviewRole();
+                } else {
+                  setPreviewRole(val as Role);
+                }
+              }}
+            >
+              <SelectTrigger className="h-8 text-xs rounded-lg border-dashed">
+                <SelectValue placeholder="Vista como..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="ADMIN">Admin (actual)</SelectItem>
+                <SelectItem value="SECRETARY">Secretaría</SelectItem>
+                <SelectItem value="DRIVER">Conductor</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+
         <div className="flex items-center gap-3 px-2 py-3 rounded-2xl bg-muted/50 group-data-[collapsible=icon]:bg-transparent transition-all">
           <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary font-bold shrink-0">
             {user?.name.charAt(0)}
           </div>
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold truncate">{user?.name}</span>
-            <span className="text-[11px] text-muted-foreground capitalize">{user?.role}</span>
+            <span className={cn(
+              "text-[11px] capitalize",
+              isPreviewing ? "text-amber-600 dark:text-amber-400 font-bold" : "text-muted-foreground"
+            )}>
+              {effectiveRole}
+              {isPreviewing && ' (vista previa)'}
+            </span>
           </div>
           <Button 
             variant="ghost" 
