@@ -1,4 +1,4 @@
-import { Mail, Phone, FileText, Award, Calendar, MoreVertical, Trash2, UserCheck, UserX, Clock } from 'lucide-react';
+import { Mail, Phone, FileText, Award, Calendar, MoreVertical, Pencil, Trash2, UserCheck, UserX, Clock } from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
 import { Badge } from '@/common/components/ui/badge';
 import { Card } from '@/common/components/ui/card';
@@ -8,6 +8,7 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/common/components/ui/dropdown-menu';
+import { PermissionGate } from '@/common/components/PermissionGate';
 import { cn } from '@/common/utils';
 import type { Passenger } from '@/modules/passengers/types';
 
@@ -15,10 +16,11 @@ interface PassengerCardProps {
   passenger: Passenger;
   onToggleStatus: (id: string, status: Passenger['status']) => void;
   onDelete: (id: string) => void;
+  onEdit?: (passenger: Passenger) => void;
   onAssignPoints?: (passenger: Passenger) => void;
 }
 
-export const PassengerCard = ({ passenger: p, onToggleStatus, onDelete, onAssignPoints }: PassengerCardProps) => {
+export const PassengerCard = ({ passenger: p, onToggleStatus, onDelete, onEdit, onAssignPoints }: PassengerCardProps) => {
   return (
     <Card className="group relative border-none shadow-sm hover:shadow-xl hover:shadow-primary/5 transition-all duration-300 overflow-hidden bg-card/85 backdrop-blur-sm p-6 flex flex-col justify-between h-full">
       <div className={cn(
@@ -59,30 +61,41 @@ export const PassengerCard = ({ passenger: p, onToggleStatus, onDelete, onAssign
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="rounded-xl p-2">
-              <DropdownMenuItem className="rounded-lg gap-2" onClick={() => onAssignPoints?.(p)}>
-                <Award className="w-4 h-4" /> Asignar Puntos
-              </DropdownMenuItem>
-              {p.status === 'ACTIVE' ? (
-                <DropdownMenuItem
-                  onClick={() => onToggleStatus(p.id, 'INACTIVE')}
-                  className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium"
-                >
-                  <UserX className="w-4 h-4" /> Desactivar Cliente
+              <PermissionGate permission="passenger:edit">
+                <DropdownMenuItem className="rounded-lg gap-2" onClick={() => onEdit?.(p)}>
+                  <Pencil className="w-4 h-4" /> Editar Pasajero
                 </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  onClick={() => onToggleStatus(p.id, 'ACTIVE')}
-                  className="rounded-lg text-emerald-600 dark:text-emerald-400 gap-2 font-medium"
-                >
-                  <UserCheck className="w-4 h-4" /> Activar Cliente
+              </PermissionGate>
+              <PermissionGate permission="passenger:edit">
+                <DropdownMenuItem className="rounded-lg gap-2" onClick={() => onAssignPoints?.(p)}>
+                  <Award className="w-4 h-4" /> Asignar Puntos
                 </DropdownMenuItem>
-              )}
-              <DropdownMenuItem
-                onClick={() => onDelete(p.id)}
-                className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
-              >
-                <Trash2 className="w-4 h-4" /> Eliminar Registro
-              </DropdownMenuItem>
+              </PermissionGate>
+              <PermissionGate permission="passenger:edit">
+                {p.status === 'ACTIVE' ? (
+                  <DropdownMenuItem
+                    onClick={() => onToggleStatus(p.id, 'INACTIVE')}
+                    className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium"
+                  >
+                    <UserX className="w-4 h-4" /> Desactivar Cliente
+                  </DropdownMenuItem>
+                ) : (
+                  <DropdownMenuItem
+                    onClick={() => onToggleStatus(p.id, 'ACTIVE')}
+                    className="rounded-lg text-emerald-600 dark:text-emerald-400 gap-2 font-medium"
+                  >
+                    <UserCheck className="w-4 h-4" /> Activar Cliente
+                  </DropdownMenuItem>
+                )}
+              </PermissionGate>
+              <PermissionGate permission="passenger:delete">
+                <DropdownMenuItem
+                  onClick={() => onDelete(p.id)}
+                  className="rounded-lg text-rose-600 dark:text-rose-400 gap-2 font-medium focus:bg-rose-50 dark:focus:bg-rose-500/10"
+                >
+                  <Trash2 className="w-4 h-4" /> Eliminar Registro
+                </DropdownMenuItem>
+              </PermissionGate>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>

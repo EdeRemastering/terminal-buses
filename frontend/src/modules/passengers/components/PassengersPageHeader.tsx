@@ -1,5 +1,6 @@
 import { Plus } from 'lucide-react';
 import { Button } from '@/common/components/ui/button';
+import { PermissionGate } from '@/common/components/PermissionGate';
 
 interface PassengersPageHeaderProps {
   onCreateClick: () => void;
@@ -12,10 +13,12 @@ export const PassengersPageHeader = ({ onCreateClick }: PassengersPageHeaderProp
         <h1 className="text-3xl font-bold tracking-tight">Gestión de Pasajeros</h1>
         <p className="text-muted-foreground mt-1">Registro de clientes, historial de viajes y programa de puntos</p>
       </div>
-      <Button onClick={onCreateClick} className="rounded-xl shadow-lg shadow-primary/20 h-11 px-6">
-        <Plus className="w-4 h-4 mr-2" />
-        Registrar Pasajero
-      </Button>
+      <PermissionGate permission="passenger:create">
+        <Button onClick={onCreateClick} className="rounded-xl shadow-lg shadow-primary/20 h-11 px-6">
+          <Plus className="w-4 h-4 mr-2" />
+          Registrar Pasajero
+        </Button>
+      </PermissionGate>
     </div>
   );
 };

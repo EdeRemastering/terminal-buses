@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Award, Loader2, CheckCircle2, AlertCircle, Sparkles } from 'lucide-react';
+import { Award, Loader2, AlertCircle, Sparkles } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -28,13 +29,16 @@ const DEFAULT_POINTS = '100';
 
 export const AssignPointsDialog = ({ passenger, open, onOpenChange }: AssignPointsDialogProps) => {
   const [points, setPoints] = useState(DEFAULT_POINTS);
-  const [reason, setReason] = useState('');
   const queryClient = useQueryClient();
 
   const mutation = useMutation({
     mutationFn: (totalPoints: number) => assignPoints(passenger!.id, totalPoints),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['passengers'] });
+      toast.success('Puntos asignados exitosamente');
+    },
+    onError: (err) => {
+      toast.error(`Error al asignar puntos: ${err.message}`);
     },
   });
 
@@ -49,7 +53,6 @@ export const AssignPointsDialog = ({ passenger, open, onOpenChange }: AssignPoin
   const handleOpenChange = (next: boolean) => {
     if (!next) {
       setPoints(DEFAULT_POINTS);
-      setReason('');
     }
     onOpenChange(next);
   };
@@ -59,7 +62,7 @@ export const AssignPointsDialog = ({ passenger, open, onOpenChange }: AssignPoin
       <DialogContent className="sm:max-w-md p-0 gap-0 overflow-hidden">
         <div className={cn(
           "absolute top-0 left-0 w-full h-1.5 transition-colors duration-500",
-          success ? "bg-violet-500" : "bg-violet-500"
+          mutation.isSuccess ? "bg-emerald-500" : "bg-violet-500"
         )} />
 
         <div className="p-6 pb-0">
@@ -122,20 +125,6 @@ export const AssignPointsDialog = ({ passenger, open, onOpenChange }: AssignPoin
                   max={MAX_POINTS}
                   value={points}
                   onChange={(e) => setPoints(e.target.value)}
-                  className="h-11 rounded-xl bg-background border border-input focus-visible:ring-primary/20"
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <Label htmlFor="reason" className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                  Motivo (opcional)
-                </Label>
-                <Input
-                  id="reason"
-                  type="text"
-                  value={reason}
-                  onChange={(e) => setReason(e.target.value)}
-                  placeholder="Ej. Bono por viaje frecuente"
                   className="h-11 rounded-xl bg-background border border-input focus-visible:ring-primary/20"
                 />
               </div>

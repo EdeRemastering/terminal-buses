@@ -1,8 +1,12 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePassengers } from '@/modules/passengers/hooks/usePassengers';
+import { useDeletePassenger } from '@/modules/passengers/hooks/useDeletePassenger';
+import { useUpdatePassengerStatus } from '@/modules/passengers/hooks/useUpdatePassengerStatus';
 import { CreatePassengerDialog } from '@/modules/passengers/components/CreatePassengerDialog';
+import { EditPassengerDialog } from '@/modules/passengers/components/EditPassengerDialog';
 import { AssignPointsDialog } from '@/modules/passengers/components/AssignPointsDialog';
 import { PassengersPageHeader } from '@/modules/passengers/components/PassengersPageHeader';
 import { PassengersStatsCards } from '@/modules/passengers/components/PassengersStatsCards';
@@ -19,7 +23,10 @@ export const PassengersPage = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingPassenger, setEditingPassenger] = useState<Passenger | null>(null);
   const [pointsPassenger, setPointsPassenger] = useState<Passenger | null>(null);
+  const { mutate: deletePassenger } = useDeletePassenger();
+  const { mutate: updatePassengerStatus } = useUpdatePassengerStatus();
 
   const stats = !passengers ? { total: 0, active: 0, inactive: 0, premium: 0 } : {
     total: passengers.length,
@@ -41,19 +48,21 @@ export const PassengersPage = () => {
   }, [passengers, searchTerm, statusFilter]);
 
   const handleToggleStatus = (id: string, newStatus: Passenger['status']) => {
-    queryClient.setQueryData<Passenger[]>(['passengers'], (old) =>
-      old ? old.map(p => p.id === id ? { ...p, status: newStatus } : p) : old
-    );
+    updatePassengerStatus({ id, status: newStatus });
   };
 
   const handleDelete = (id: string) => {
-    queryClient.setQueryData<Passenger[]>(['passengers'], (old) =>
-      old ? old.filter(p => p.id !== id) : old
-    );
+    deletePassenger(id, {
+      onSuccess: () => toast.success('Pasajero eliminado'),
+      onError: () => {
+        toast.error('Error al eliminar el pasajero');
+        queryClient.invalidateQueries({ queryKey: ['passengers'] });
+      },
+    });
   };
 
   if (isError) {
-    return <PassengersErrorState message={(error as Error).message} onRetry={() => window.location.reload()} />;
+    return <PassengersErrorState message={(error as Error).message} onRetry={() => queryClient.refetchQueries({ queryKey: ['passengers'] })} />;
   }
 
   return (
@@ -92,6 +101,7 @@ export const PassengersPage = () => {
                   passenger={p}
                   onToggleStatus={handleToggleStatus}
                   onDelete={handleDelete}
+                  onEdit={setEditingPassenger}
                   onAssignPoints={setPointsPassenger}
                 />
               </motion.div>
@@ -105,6 +115,11 @@ export const PassengersPage = () => {
       )}
 
       <CreatePassengerDialog open={dialogOpen} onOpenChange={setDialogOpen} />
+      <EditPassengerDialog
+        open={!!editingPassenger}
+        onOpenChange={(open) => { if (!open) setEditingPassenger(null); }}
+        passenger={editingPassenger}
+      />
       <AssignPointsDialog
         passenger={pointsPassenger}
         open={!!pointsPassenger}
