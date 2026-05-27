@@ -48,40 +48,52 @@ CorsMiddleware::handle();
 $router = new Router();
 $prefix = '/api/v1';
 
-$router->post("$prefix/auth/login",    [AuthController::class, 'login']);
-$router->get("$prefix/auth/me",         [AuthController::class, 'me']);
-$router->post("$prefix/auth/logout",    [AuthController::class, 'logout']);
+$router->post("$prefix/auth/login",       [AuthController::class, 'login']);
+$router->post("$prefix/auth/register",    [AuthController::class, 'register']);
+$router->get("$prefix/auth/me",           [AuthController::class, 'me']);
+$router->post("$prefix/auth/logout",      [AuthController::class, 'logout']);
 
-$router->get("$prefix/buses",           [BusController::class, 'index']);
-$router->get("$prefix/buses/{id}",      [BusController::class, 'show']);
-$router->post("$prefix/buses",          [BusController::class, 'store']);
-$router->put("$prefix/buses/{id}",      [BusController::class, 'update']);
-$router->delete("$prefix/buses/{id}",   [BusController::class, 'destroy']);
+$router->get("$prefix/buses",             [BusController::class, 'index']);
+$router->get("$prefix/buses/{id}",        [BusController::class, 'show']);
+$router->post("$prefix/buses",            [BusController::class, 'store']);
+$router->put("$prefix/buses/{id}",        [BusController::class, 'update']);
+$router->delete("$prefix/buses/{id}",     [BusController::class, 'destroy']);
+$router->get("$prefix/buses/{id}/trips",  [BusController::class, 'trips']);
+$router->patch("$prefix/buses/{id}/status", [BusController::class, 'updateStatus']);
 
-$router->get("$prefix/drivers",          [DriverController::class, 'index']);
-$router->get("$prefix/drivers/{id}",     [DriverController::class, 'show']);
-$router->post("$prefix/drivers",         [DriverController::class, 'store']);
-$router->put("$prefix/drivers/{id}",     [DriverController::class, 'update']);
-$router->delete("$prefix/drivers/{id}",  [DriverController::class, 'destroy']);
+$router->get("$prefix/drivers",             [DriverController::class, 'index']);
+$router->get("$prefix/drivers/{id}",        [DriverController::class, 'show']);
+$router->post("$prefix/drivers",            [DriverController::class, 'store']);
+$router->put("$prefix/drivers/{id}",        [DriverController::class, 'update']);
+$router->delete("$prefix/drivers/{id}",     [DriverController::class, 'destroy']);
+$router->get("$prefix/driver/my-info",      [DriverController::class, 'myInfo']);
+$router->patch("$prefix/drivers/{id}/availability", [DriverController::class, 'updateAvailability']);
 
 $router->get("$prefix/passengers",          [PassengerController::class, 'index']);
 $router->get("$prefix/passengers/{id}",     [PassengerController::class, 'show']);
 $router->post("$prefix/passengers",         [PassengerController::class, 'store']);
 $router->put("$prefix/passengers/{id}",     [PassengerController::class, 'update']);
 $router->delete("$prefix/passengers/{id}",  [PassengerController::class, 'destroy']);
+$router->patch("$prefix/passengers/{id}/status", [PassengerController::class, 'updateStatus']);
 
 $router->get("$prefix/routes",          [RouteController::class, 'index']);
 $router->get("$prefix/routes/{id}",     [RouteController::class, 'show']);
 $router->post("$prefix/routes",         [RouteController::class, 'store']);
 $router->put("$prefix/routes/{id}",     [RouteController::class, 'update']);
 $router->delete("$prefix/routes/{id}",  [RouteController::class, 'destroy']);
+$router->patch("$prefix/routes/{id}/status", [RouteController::class, 'updateStatus']);
 
 $router->get("$prefix/trips",           [TripController::class, 'index']);
 $router->get("$prefix/trips/{id}",      [TripController::class, 'show']);
 $router->post("$prefix/trips",          [TripController::class, 'store']);
 $router->put("$prefix/trips/{id}",       [TripController::class, 'update']);
-$router->patch("$prefix/trips/{id}/status", [TripController::class, 'updateStatus']);
-$router->delete("$prefix/trips/{id}",   [TripController::class, 'destroy']);
+$router->patch("$prefix/trips/{id}/status",    [TripController::class, 'updateStatus']);
+$router->delete("$prefix/trips/{id}",            [TripController::class, 'destroy']);
+
+$router->post("$prefix/trips/{id}/passengers",          [TripController::class, 'addPassenger']);
+$router->delete("$prefix/trips/{id}/passengers/{pid}",   [TripController::class, 'removePassenger']);
+$router->put("$prefix/trips/{id}/passengers/{pid}/seat",    [TripController::class, 'assignSeat']);
+$router->delete("$prefix/trips/{id}/passengers/{pid}/seat", [TripController::class, 'clearSeat']);
 
 $router->get("$prefix/dashboard/stats", [DashboardController::class, 'stats']);
 
