@@ -135,6 +135,13 @@ export const LoginForm = ({ onSuccess }: LoginFormProps) => {
               Envía un correo a <strong>admin@terminal.com</strong> solicitando el restablecimiento.
             </p>
           </div>
+          <a
+            href="mailto:admin@terminal.com?subject=Solicitud%20de%20restablecimiento%20de%20contraseña&body=Hola,%20solicito%20el%20restablecimiento%20de%20mi%20contraseña%20de%20acceso%20al%20sistema."
+            className="flex items-center justify-center gap-2 w-full h-11 rounded-xl bg-primary text-primary-foreground font-medium hover:bg-primary/90 transition-colors mt-2"
+          >
+            <Mail className="w-4 h-4" />
+            Enviar Correo
+          </a>
         </DialogContent>
       </Dialog>
 

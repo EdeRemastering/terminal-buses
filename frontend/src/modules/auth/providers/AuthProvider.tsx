@@ -1,5 +1,7 @@
-import { useState, useEffect, type ReactNode } from 'react';
+import { useState, useEffect, useCallback, type ReactNode } from 'react';
+import { toast } from 'sonner';
 
+import type { Role } from '@/common/types';
 import type { AuthState, LoginRequest } from '@/modules/auth/types';
 import { loginUser } from '@/modules/auth/api/loginUser';
 import { logoutUser } from '@/modules/auth/api/logoutUser';
@@ -11,7 +13,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     user: null,
     isAuthenticated: false,
     isLoading: true,
+    previewRole: null,
   });
+
+  const effectiveRole = state.previewRole ?? state.user?.role ?? null;
 
   // Al montar, verifica si hay un token guardado y valida con el backend
   useEffect(() => {
@@ -24,15 +29,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
             user,
             isAuthenticated: true,
             isLoading: false,
+            previewRole: null,
           });
-        } catch {
-          // Token invalido o expirado, limpiar y mostrar login
-          console.log('[Auth] DEBUG: token invalido, redirigiendo a login');
+         } catch {
           localStorage.removeItem('auth_token');
           setState({
             user: null,
             isAuthenticated: false,
             isLoading: false,
+            previewRole: null,
           });
         }
       } else {
@@ -40,6 +45,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           user: null,
           isAuthenticated: false,
           isLoading: false,
+          previewRole: null,
         });
       }
     };
@@ -56,25 +62,42 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         user,
         isAuthenticated: true,
         isLoading: false,
+        previewRole: null,
       });
+      toast.success('Inicio de sesión exitoso');
     } catch (error) {
       setState((prev) => ({ ...prev, isLoading: false }));
+      toast.error('Credenciales inválidas. Intente de nuevo.');
       throw error;
     }
   };
 
-  const logout = () => {
-    logoutUser();
+  const logout = async () => {
+    try {
+      await logoutUser();
+    } catch {
+      // Ignorar errores de API al cerrar sesión, igual se limpia el estado local
+    }
     localStorage.removeItem('auth_token');
     setState({
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      previewRole: null,
     });
+    toast.info('Sesión cerrada');
   };
 
+  const setPreviewRole = useCallback((role: Role | null) => {
+    setState((prev) => ({ ...prev, previewRole: role }));
+  }, []);
+
+  const clearPreviewRole = useCallback(() => {
+    setState((prev) => ({ ...prev, previewRole: null }));
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...state, effectiveRole, login, logout, setPreviewRole, clearPreviewRole }}>
       {children}
     </AuthContext.Provider>
   );

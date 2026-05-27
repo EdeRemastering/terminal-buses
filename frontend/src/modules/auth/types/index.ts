@@ -1,4 +1,4 @@
-import type { User } from '@/common/types';
+import type { Role, User } from '@/common/types';
 
 export interface LoginRequest {
   email: string;
@@ -14,4 +14,5 @@ export interface AuthState {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  previewRole: Role | null;
 }
