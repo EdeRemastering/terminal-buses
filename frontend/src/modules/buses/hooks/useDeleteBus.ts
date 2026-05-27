@@ -1,20 +1,19 @@
 import { toast } from 'sonner';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createBus } from '@/modules/buses/api/createBus';
+import { deleteBus } from '@/modules/buses/api/deleteBus';
 import { getErrorMessage } from '@/common/utils';
-import type { CreateBusInput } from '@/modules/buses/schemas/busSchema';
 import type { Bus } from '@/modules/buses/types';
 
-export const useCreateBus = () => {
+export const useDeleteBus = () => {
   const queryClient = useQueryClient();
 
-  return useMutation<Bus, Error, CreateBusInput>({
-    mutationFn: createBus,
-    onSuccess: (newBus) => {
+  return useMutation<void, Error, string>({
+    mutationFn: deleteBus,
+    onSuccess: (_, id) => {
       queryClient.setQueryData<Bus[]>(['buses'], (old) =>
-        old ? [...old, newBus] : [newBus]
+        old ? old.filter(b => b.id !== id) : old
       );
-      toast.success('Bus creado exitosamente');
+      toast.success('Bus eliminado exitosamente');
     },
     onError: (err) => {
       toast.error(getErrorMessage(err));
